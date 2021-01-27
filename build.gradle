@@ -1,0 +1,123 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'org.cadixdev.licenser' version '0.5.0'
+    id 'com.github.johnrengelman.shadow' version '5.2.0'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+
+group 'net.covers1624'
+archivesBaseName = "BadCodeScanner"
+version '0.1.0'
+
+version = "$version." + (System.getenv("BUILD_NUMBER") ?: "1")
+println "Starting build of ${archivesBaseName}, Version: ${version}"
+
+repositories {
+    jcenter()
+    mavenLocal()
+    maven { url 'https://maven.covers1624.net/' }
+    maven { url "https://libraries.minecraft.net" }
+}
+
+dependencies {
+    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
+    implementation 'org.apache.logging.log4j:log4j-core:2.11.1'
+    implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.google.guava:guava:26.0-jre'
+    implementation 'codechicken:ChickenASM:2.0.0.+'
+    implementation 'com.mojang:datafixerupper:2.0.24'
+    implementation 'net.covers1624:Quack:0.1.2.+'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+def commonManifest = {
+    attributes 'Main-Class': 'net.covers1624.scanner.BadCodeScanner'
+}
+
+jar {
+    manifest commonManifest
+    from file("LICENSE.txt")
+}
+
+shadowJar {
+    minimize()
+    manifest commonManifest
+
+    //Include license, exclude java9 and maven things.
+    from file("LICENSE.txt")
+    exclude 'META-INF/maven/**'
+    exclude 'module-info.class'
+}
+
+task srcJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allSource
+    from file("LICENSE.txt")
+}
+
+build.dependsOn shadowJar
+
+license {
+    header = file("LICENSE.txt")
+
+    include 'net/covers1624/scanner/**'
+}
+
+publishing {
+    repositories {
+        if (System.getenv('MAVEN_PASS')) {
+            maven {
+                url "https://maven-upload.covers1624.net/"
+                credentials {
+                    username 'covers1624'
+                    password System.getenv('MAVEN_PASS')
+                }
+            }
+        }
+    }
+    publications {
+        DiffPatch(MavenPublication) {
+            groupId project.group
+            artifactId project.archivesBaseName
+            version project.version
+            from components['java']
+            artifact shadowJar
+            artifact srcJar
+
+            pom {
+                name = archivesBaseName
+                description = archivesBaseName
+                //The publish plugin doesnt like GString's here apparently..
+                url = "https://github.com/covers1624/${archivesBaseName}".toString()
+                scm {
+                    url = "https://github.com/covers1624/${archivesBaseName}".toString()
+                    connection = "scm:git:git://github.com/covers1624/${archivesBaseName}.git".toString()
+                    connection = "scm:git:git@github.com:covers1624/${archivesBaseName}.git".toString()
+                }
+
+                issueManagement {
+                    system = 'github'
+                    url = "https://github.com/covers1624/${archivesBaseName}/issues".toString()
+                }
+                licenses {
+                    license {
+                        name = "MIT"
+                        url = "https://raw.githubusercontent.com/covers1624/${archivesBaseName}/master/LICENSE.txt".toString()
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'covers1624'
+                        name = 'covers1624'
+                    }
+                }
+            }
+        }
+    }
+}
