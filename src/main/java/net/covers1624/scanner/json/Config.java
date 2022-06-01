@@ -28,6 +28,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ public class Config {
     public static final Gson GSON = new GsonBuilder()
             .registerTypeAdapter(FieldAccessConfig.class, new FieldAccessConfig.Serializer())
             .registerTypeAdapter(MethodAccessConfig.class, new MethodAccessConfig.Serializer())
+            .registerTypeAdapter(OpcodeUseConfig.class, new OpcodeUseConfig.Serializer())
             .create();
 
     @SerializedName ("field_access")
@@ -47,4 +49,7 @@ public class Config {
 
     @SerializedName ("method_access")
     public Map<String, List<MethodAccessConfig>> methodAccesses = new HashMap<>();
+
+    @SerializedName ("opcode_uses")
+    public List<OpcodeUseConfig> opcodeUses = new ArrayList<>();
 }

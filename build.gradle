@@ -27,7 +27,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.google.guava:guava:26.0-jre'
     implementation 'codechicken:ChickenASM:2.0.0.+'
-    implementation 'com.mojang:datafixerupper:2.0.24'
+    implementation 'com.mojang:datafixerupper:4.0.26'
     implementation 'net.covers1624:Quack:0.1.2.+'
 }
 

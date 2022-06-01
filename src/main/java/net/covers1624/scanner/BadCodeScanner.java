@@ -34,8 +34,10 @@ import net.covers1624.quack.io.IOUtils;
 import net.covers1624.scanner.json.Config;
 import net.covers1624.scanner.json.FieldAccessConfig;
 import net.covers1624.scanner.json.MethodAccessConfig;
+import net.covers1624.scanner.json.OpcodeUseConfig;
 import net.covers1624.scanner.scanners.FieldAccessScanner;
 import net.covers1624.scanner.scanners.MethodAccessScanner;
+import net.covers1624.scanner.scanners.OpcodeUseScanner;
 import net.covers1624.scanner.scanners.Scanner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -135,6 +137,10 @@ public class BadCodeScanner {
                 ObfMapping mapping = new ObfMapping(name, mConfig.name, mConfig.desc);
                 scanners.add(new MethodAccessScanner(mapping, mConfig.exclusions, mConfig.opcodes));
             }
+        }
+
+        for (OpcodeUseConfig opcodeUse : config.opcodeUses) {
+            scanners.add(new OpcodeUseScanner(opcodeUse.opcodes));
         }
 
         if (Files.isDirectory(targetFile)) {
