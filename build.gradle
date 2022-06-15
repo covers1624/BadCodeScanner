@@ -11,7 +11,7 @@ java {
 
 group 'net.covers1624'
 archivesBaseName = "BadCodeScanner"
-version '0.1.0'
+version '0.2.0'
 
 version = "$version." + (System.getenv("BUILD_NUMBER") ?: "1")
 println "Starting build of ${archivesBaseName}, Version: ${version}"
