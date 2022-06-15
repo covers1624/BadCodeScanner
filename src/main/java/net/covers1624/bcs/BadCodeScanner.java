@@ -1,11 +1,7 @@
 package net.covers1624.bcs;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import net.covers1624.bcs.api.IgnoreBadCode;
+import com.google.gson.*;
 import net.covers1624.bcs.scanners.FieldUseScanner;
 import net.covers1624.bcs.scanners.MethodUseScanner;
 import net.covers1624.bcs.scanners.OpcodeUseScanner;
@@ -43,10 +39,9 @@ public class BadCodeScanner {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Gson GSON = new GsonBuilder().setLenient().create();
 
-    private static final String IGNORE_BAD_CODE_DESC = IgnoreBadCode.class.getName().replace(".", "/");
-
     private final Map<String, Function<JsonElement, Scanner>> scannerFactories;
 
+    private final Set<String> ignoreAnnotations = new HashSet<>();
     private final Map<String, List<Scanner>> scanners = new HashMap<>();
     private final Map<String, Map<String, List<ScanResult>>> scanResults = new ConcurrentHashMap<>();
 
@@ -68,7 +63,18 @@ public class BadCodeScanner {
 
     public void setup(Path config) throws IOException {
         JsonObject obj = JsonUtils.parse(GSON, config, JsonObject.class);
-        for (Map.Entry<String, JsonElement> groupEntry : obj.entrySet()) {
+
+        if (obj.has("settings")) {
+            JsonObject settings = obj.getAsJsonObject("settings");
+            if (settings.has("ignore_annotations")) {
+                for (JsonElement element : settings.getAsJsonArray("ignore_annotations")) {
+                    ignoreAnnotations.add(element.getAsString());
+                }
+            }
+        }
+
+        if (!obj.has("groups")) throw new JsonSyntaxException("Expected 'groups' object.");
+        for (Map.Entry<String, JsonElement> groupEntry : obj.getAsJsonObject("groups").entrySet()) {
             String groupName = groupEntry.getKey();
             List<Scanner> scanners = new LinkedList<>();
 
@@ -131,9 +137,11 @@ public class BadCodeScanner {
         ClassNode cNode = toNode(file);
         Set<String> excludedGroupsByClass = getExcludedGroups(cNode.visibleAnnotations);
         for (MethodNode mNode : cNode.methods) {
+            if (excludedGroupsByClass.contains("*")) continue;
             Set<String> excludedGroupsByMethod = getExcludedGroups(mNode.visibleAnnotations);
             List<ScanResult> results = new LinkedList<>();
             for (AbstractInsnNode insn : mNode.instructions) {
+                if (excludedGroupsByMethod.contains("*")) continue;
                 for (Scanner scanner : getApplicableScanners(excludedGroupsByClass, excludedGroupsByMethod)) {
                     ScanResult result = scanner.scan(insn, mNode, cNode);
                     if (result != null) {
@@ -165,15 +173,34 @@ public class BadCodeScanner {
         }
     }
 
-    private static Set<String> getExcludedGroups(List<AnnotationNode> annotations) {
+    private Set<String> getExcludedGroups(List<AnnotationNode> annotations) {
         if (annotations == null || annotations.isEmpty()) return ImmutableSet.of();
 
         Set<String> ignored = new HashSet<>();
         for (AnnotationNode annotation : annotations) {
-            if (annotation.desc.equals(IGNORE_BAD_CODE_DESC)) {
+            if (ignoreAnnotations.contains(annotation.desc)) {
+                if (annotation.values == null) {
+                    ignored.add("*");
+                } else if (annotation.values.size() != 2) {
+                    LOGGER.warn("Failed to parse ignore annotation. Expected 2 values. Got :" + annotation.values);
+                } else {
+                    addValues(ignored, annotation.values.get(1));
+                }
                 ignored.addAll(unsafeCast(annotation.values.get(1)));
             }
         }
         return ignored;
+    }
+
+    private void addValues(Set<String> ignored, Object obj) {
+        if (obj instanceof String s) {
+            ignored.add(s);
+        } else if (obj instanceof List<?> list) {
+            for (Object o : list) {
+                addValues(ignored, o);
+            }
+        } else {
+            LOGGER.info("Unknown value type in ignore annotation: {}:{}", obj.getClass(), obj);
+        }
     }
 }
