@@ -1,4 +1,4 @@
-package net.covers1624.scanner.util;
+package net.covers1624.bcs.util;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;

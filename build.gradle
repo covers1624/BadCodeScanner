@@ -1,11 +1,13 @@
 plugins {
     id 'java'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.5.0'
-    id 'com.github.johnrengelman.shadow' version '5.2.0'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+    withSourcesJar()
+}
 
 group 'net.covers1624'
 archivesBaseName = "BadCodeScanner"
@@ -14,7 +16,12 @@ version '0.1.0'
 version = "$version." + (System.getenv("BUILD_NUMBER") ?: "1")
 println "Starting build of ${archivesBaseName}, Version: ${version}"
 
+sourceSets {
+    api
+}
+
 repositories {
+    mavenCentral()
     jcenter()
     mavenLocal()
     maven { url 'https://maven.covers1624.net/' }
@@ -22,13 +29,16 @@ repositories {
 }
 
 dependencies {
+    implementation sourceSets.api.output
     implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    implementation 'org.apache.logging.log4j:log4j-core:2.11.1'
-    implementation 'com.google.code.gson:gson:2.8.5'
-    implementation 'com.google.guava:guava:26.0-jre'
-    implementation 'codechicken:ChickenASM:2.0.0.+'
+    implementation 'org.apache.logging.log4j:log4j-core:2.17.2'
+    implementation 'com.google.code.gson:gson:2.9.0'
+    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'codechicken:ChickenASM:2.0.1.14'
     implementation 'com.mojang:datafixerupper:4.0.26'
-    implementation 'net.covers1624:Quack:0.1.2.+'
+    implementation 'net.covers1624:Quack:0.4.3.53'
+
+    compileOnly 'org.jetbrains:annotations:23.0.0'
 }
 
 test {
@@ -36,7 +46,7 @@ test {
 }
 
 def commonManifest = {
-    attributes 'Main-Class': 'net.covers1624.scanner.BadCodeScanner'
+    attributes 'Main-Class': 'net.covers1624.bcs.BadCodeScanner'
 }
 
 jar {
@@ -48,25 +58,13 @@ shadowJar {
     minimize()
     manifest commonManifest
 
-    //Include license, exclude java9 and maven things.
+    // Include license, exclude java9 and maven things.
     from file("LICENSE.txt")
     exclude 'META-INF/maven/**'
     exclude 'module-info.class'
 }
 
-task srcJar(type: Jar) {
-    classifier 'sources'
-    from sourceSets.main.allSource
-    from file("LICENSE.txt")
-}
-
 build.dependsOn shadowJar
-
-license {
-    header = file("LICENSE.txt")
-
-    include 'net/covers1624/scanner/**'
-}
 
 publishing {
     repositories {
@@ -87,7 +85,7 @@ publishing {
             version project.version
             from components['java']
             artifact shadowJar
-            artifact srcJar
+            artifact sourcesJar
 
             pom {
                 name = archivesBaseName
