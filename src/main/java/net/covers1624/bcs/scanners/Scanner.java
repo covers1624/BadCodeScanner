@@ -26,7 +26,7 @@ public interface Scanner {
 
     static Location getLoc(MethodNode mNode, AbstractInsnNode insn) {
         AbstractInsnNode ln = insn;
-        while (ln.getType() != AbstractInsnNode.LINE) {
+        while (ln != null && ln.getType() != AbstractInsnNode.LINE) {
             ln = ln.getPrevious();
         }
 
