@@ -2,9 +2,7 @@ package net.covers1624.bcs;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.*;
-import net.covers1624.bcs.scanners.FieldUseScanner;
-import net.covers1624.bcs.scanners.MethodUseScanner;
-import net.covers1624.bcs.scanners.OpcodeUseScanner;
+import net.covers1624.bcs.scanners.*;
 import net.covers1624.bcs.scanners.Scanner;
 import net.covers1624.bcs.scanners.Scanner.ScanResult;
 import net.covers1624.quack.collection.StreamableIterable;
@@ -53,7 +51,8 @@ public class BadCodeScanner {
         BadCodeScanner scanner = new BadCodeScanner(Map.of(
                 "method_use", MethodUseScanner::new,
                 "field_use", FieldUseScanner::new,
-                "opcode_use", OpcodeUseScanner::new
+                "opcode_use", OpcodeUseScanner::new,
+                "type_use", TypeUseScanner::new
         ));
 
         scanner.setup(Path.of("./config.json"));
